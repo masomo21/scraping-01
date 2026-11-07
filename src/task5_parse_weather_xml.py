@@ -12,9 +12,18 @@ def parse_weather_xml(xml_file):
     Returns:
         list of dict: A list of dictionaries with parsed weather data.
     """
+    with open(xml_file, "r", encoding="utf-8") as file:
+        root = ET.fromstring(file.read())
 
-
-    return None
+    data = []
+    for day in root.findall("day"):
+        data.append({
+            "date": day.findtext("date"),
+            "temperature": float(day.findtext("temperature")),
+            "humidity": int(day.findtext("humidity")),
+            "precipitation": float(day.findtext("precipitation")),
+        })
+    return data
 
 
 def save_to_csv(data, filename="parsed_weather_data.csv"):
@@ -25,7 +34,11 @@ def save_to_csv(data, filename="parsed_weather_data.csv"):
         data (list of dict): Parsed weather data.
         filename (str): Name of the CSV file.
     """
-    pass
+    with open(filename, "w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow(["Date", "Temperature", "Humidity", "Precipitation"])
+        for row in data:
+            writer.writerow([row["date"], row["temperature"], row["humidity"], row["precipitation"]])
 
 
 if __name__ == "__main__":
