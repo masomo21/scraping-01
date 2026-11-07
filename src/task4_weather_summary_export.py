@@ -1,6 +1,9 @@
 import json
 import csv
 
+HOT_THRESHOLD = 30   # °C
+WIND_THRESHOLD = 15  # km/h
+
 
 def load_json(filename):
     """
@@ -12,8 +15,8 @@ def load_json(filename):
     Returns:
         dict: The loaded JSON data.
     """
-
-    return None
+    with open(filename, "r", encoding="utf-8") as file:
+        return json.load(file)
 
 
 def summarize_weather_data(data):
@@ -26,9 +29,19 @@ def summarize_weather_data(data):
     Returns:
         dict: A summary of the key metrics across all days.
     """
-
-
-    return None
+    count = len(data)
+    if count == 0:
+        return {}
+    return {
+        "average_max_temp": sum(d["max_temperature"] for d in data) / count,
+        "average_min_temp": sum(d["min_temperature"] for d in data) / count,
+        "total_precipitation": sum(d["precipitation"] for d in data),
+        "average_wind_speed": sum(d["wind_speed"] for d in data) / count,
+        "average_humidity": sum(d["humidity"] for d in data) / count,
+        "hot_days": sum(1 for d in data if d["max_temperature"] > HOT_THRESHOLD),
+        "windy_days": sum(1 for d in data if d["wind_speed"] > WIND_THRESHOLD),
+        "rainy_days": sum(1 for d in data if d["precipitation"] > 0),
+    }
 
 
 def export_to_csv(data, file):
@@ -39,7 +52,34 @@ def export_to_csv(data, file):
         data (list of dict): The daily weather data to export.
         file (str or file-like object): The name of the CSV file to save the data in, or a file-like object.
     """
-    ...
+    fieldnames = [
+        "Date", "Max Temperature", "Min Temperature", "Precipitation",
+        "Wind Speed", "Humidity", "Weather Description",
+        "Is Hot Day", "Is Windy Day", "Is Rainy Day",
+    ]
+
+    def write(handle):
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for d in data:
+            writer.writerow({
+                "Date": d["date"],
+                "Max Temperature": d["max_temperature"],
+                "Min Temperature": d["min_temperature"],
+                "Precipitation": d["precipitation"],
+                "Wind Speed": d["wind_speed"],
+                "Humidity": d["humidity"],
+                "Weather Description": d.get("weather_description", ""),
+                "Is Hot Day": d["max_temperature"] > HOT_THRESHOLD,
+                "Is Windy Day": d["wind_speed"] > WIND_THRESHOLD,
+                "Is Rainy Day": d["precipitation"] > 0,
+            })
+
+    if isinstance(file, str):
+        with open(file, "w", newline="", encoding="utf-8") as handle:
+            write(handle)
+    else:
+        write(file)  # file-like object such as StringIO
 
 
 if __name__ == "__main__":
